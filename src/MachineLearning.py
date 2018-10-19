@@ -31,8 +31,11 @@ class NeuralNetwork:
     def backPropagation(self):
         # application of the chain rule to find derivative of the loss function
         # with respect to the weights w1 and w2
-        d_w2 = np.dot(self.layer1.T, (2 * (self.y - self.output) * sigmoidDerivative(self.output)))
-        d_w1 = np.dot(self.input.T, (np.dot(2 * (self.y - self.output) * sigmoidDerivative(self.output), self.w2.T) * sigmoidDerivative(self.layer1)))
+        d_w2 = np.dot(self.layer1.T, (2 * (self.y - self.output) 
+            * sigmoidDerivative(self.output)))
+        d_w1 = np.dot(self.input.T, (np.dot(2 * (self.y - self.output) 
+            * sigmoidDerivative(self.output), self.w2.T) 
+            * sigmoidDerivative(self.layer1)))
 
         # update the weights with the derivative (slope) of the loss function
         self.w1 += d_w1
