@@ -48,6 +48,7 @@ class NeuralNetwork:
         
 # -----------------------------------------------------------------------------
 # use NN for the XOR problem
+# test
 
 if __name__ == "__main__":
     # Each row is a training example, each column is a feature  [X1, X2, X3]
