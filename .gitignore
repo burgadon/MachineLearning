@@ -1,2 +1,6 @@
 .project
+
 .pydevproject
+src/__pycache__/
+src/w1.txt
+src/w2.txt
