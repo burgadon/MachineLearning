@@ -1,14 +1,14 @@
 # StepData.py
 # Author: Armin Müller
 # Created on 01.11.2018
-# Last Modified on: 1.11.2018
+# Last Modified on: 19.11.2018
 #
 # This file provides a data object to store step data in it
 
 class StepData(object):
     def __init__(self):
         # parameters
-        self.label = ""
+        self.label = 0
         self.accelerationData = []
     
     #getter
