@@ -14,59 +14,56 @@ class Parser(object):
         self.destination = ""
         self.data = []
         self.lineCtr = 1
-        self.dataArrayIndex = 1
-        self.average = [0.0, 0.0, 0.0]
-        
+        self.average = []
+
     def askForDestination(self):
         self.destination = input("Type in the destination of the file, which should be parsed:\n")
         print("Input Destination: " + self.destination)
-    
+
     def askForAverageCalculation(self):
-        result = input("Do you want to calculate the average for noise reduction purposes? (yes/no): ")
-        if result == "yes":
+        result = input("Do you want to calculate the average for noise reduction purposes? (y(es) / n(o)): ")
+        if (result == "yes") | (result == "y"):
             # calculate the average for noise reduction
             self.askForDestination()
             self.processData()
-            for i in len(self.average):
+            for i in range(len(self.average)):
                 self.average[i] /= self.lineCtr
-            
-            print("The average values are: x = " + str(self.average[0]) + ", y = " + str(self.average[1]) + ", z = " + str(self.average[2]) + ".")
-            
-        elif result == "no":
+
+            print("The average values are: x = " + str(self.average[0]) + ", y = " + str(self.average[1]) + ", z = " + str(self.average[2]) + ".\n")
+
+        elif (result == "no") | (result == "n"):
             # nothing to do
             return None
         else:
             print("Your given answer (" + result + ") was not recognized. Try again!")
             self.askForAverageCalculation()
-    
+
+        return None
+
     def processData(self):
         with open(self.destination, "r") as file:
             data = file.readlines()
             self.lineCtr = 1    # reset line counter
-            
+
             for line in data:
                 # if line is empty: skip it
-                if line.replace(" ", "").replace("\n", "").replace("\r", "").isEmpty():
+                lineWithoutSpacesAndLineFeeds = line.replace(" ", "").rstrip()
+                if len(lineWithoutSpacesAndLineFeeds) == 0:
                     continue
-                
+
                 # for noise reduction purposes
-                if line.contains("noise"):                    
-                    sum = [0.0, 0.0, 0.0]
-                    self.processNoiseDataLine(line.replace(" ", "").replace("\n", "").replace("\r", ""), sum)
+                if line.find("noise") > -1:
+                    avgSum = [0.0, 0.0, 0.0]
+                    self.processNoiseDataLine(line.replace(" ", "").rstrip(), avgSum)
                     self.lineCtr += 1
-                    self.average += sum
-                
+                    self.average += avgSum
+
                 else:
                     # normal data processing
-                    # set index for data array
-                    if (self.lineCtr % 3) == 0:
-                        self.dataArrayIndex += 1
-                    
-                    # create new step data object
-                    stepData = StepData()
-                    
-                    self.processLine(line.replace(" ", "").replace("\n", "").replace("\r", ""), stepData)
-                    self.data[self.dataArrayIndex].append(stepData)     # TODO: do we need 3 in one line or just self.data.append(stepData)?
+                    stepData = StepData()   # create new step data object
+
+                    self.processLine(line.replace(" ", "").rstrip(), stepData)
+                    self.data.append(stepData)
                     self.lineCtr += 1
 
     def processLine(self, line, stepData):
@@ -75,23 +72,23 @@ class Parser(object):
         line = self.processPairOfLeadingAndTrailingBrackets(line)
         line = self.processLabel(line, stepData)
         line = self.processAccelerationData(line, stepData)
-        
-        if not line.isEmpty():
-            raise ValueError("Error processing line " + str(self.lineCtr)
-                + ": The processed line should be empty at this point, but \""
-                + line + "\" was found.")
-            
-    def processNoiseDataLine(self, line, sum):
+
+#         if not line.isEmpty():
+#             raise ValueError("Error processing line " + str(self.lineCtr)
+#                 + ": The processed line should be empty at this point, but \""
+#                 + line + "\" was found.")
+
+    def processNoiseDataLine(self, line, avgSum):
         line = self.processRubbishAtStart(line)
         line = self.processRubbishAtEnd(line)
         line = self.processPairOfLeadingAndTrailingBrackets(line)
-        line = self.processNoiseData(line, sum)
-        
-        if not line.isEmpty():
-            raise ValueError("Error processing line " + str(self.lineCtr)
-                + ": The processed line should be empty at this point, but \""
-                + line + "\" was found.")
-    
+        line = self.processNoiseData(line, avgSum)
+
+#         if len(line) > 0:
+#             raise ValueError("Error processing line " + str(self.lineCtr)
+#                 + ": The processed line should be empty at this point, but \""
+#                 + line + "\" was found.")
+
     def processRubbishAtStart(self, line):
         # check for undefined start characters
         if line.startswith("[{"):
@@ -101,14 +98,14 @@ class Parser(object):
             # invalid line format/content
             raise ValueError("Error processing line " + str(self.lineCtr)
                 + ": Start of line wasn't found and/or line is too short.")
+            return None
         else:
             # search for beginning of json
-            for i in range(len(line)):
-                line = line[1:] # cut off first character and check again
-                line = self.processRubbishAtStart(line)
-                
+            line = line[1:] # cut off first character and check again
+            line = self.processRubbishAtStart(line)
+
         return line
-    
+
     def processRubbishAtEnd(self, line):
         # check for undefined end characters
         if line.endswith("}]"):
@@ -118,20 +115,20 @@ class Parser(object):
             # invalid line format/content
             raise ValueError("Error processing line " + str(self.lineCtr)
                 + ": End of line wasn't found and/or line is too short.")
+            return None
         else:
             # search for ending of json
-            for i in range(len(line)):
-                line = line[:-1] # cut off last character and check again
-                line = self.processRubbishAtEnd(line)
-                
-        return line  
-    
+            line = line[:-1] # cut off last character and check again
+            line = self.processRubbishAtEnd(line)
+
+        return line
+
     def processPairOfLeadingAndTrailingBrackets(self, line):
         # check for matching brackets
         if line.startswith("[{"):
             if line.endswith("}]"):
                 # matching brackets --> delete them
-                line.replace("[{", "", 1)
+                line = line.replace("[{", "", 1)
                 line = line[:-2]
             else:
                 raise ValueError("Error processing line " + str(self.lineCtr)
@@ -139,7 +136,7 @@ class Parser(object):
         else:
             raise ValueError("Error processing line " + str(self.lineCtr)
                     + ": No opening brackets (\"[{\") found at start of line.")
-        
+
         return line
 
     def processLabel(self, line, stepData):
@@ -151,25 +148,30 @@ class Parser(object):
                     + ": The \"Label\" keyword was not found.")
 
         # process the actual label
-        if line.startswith("slowWalk"):
-            #found label
-            line = line.replace("slowWalk,", "")
-            stepData.setLabel("slowWalk")
-            return line
-        elif line.startswith("noMove"):
+        if line.startswith("noMove"):
             #found label
             line = line.replace("noMove,", "")
-            stepData.setLabel("noMove")
+            stepData.setLabel(1)
+            return line
+        elif line.startswith("slowWalk"):
+            #found label
+            line = line.replace("slowWalk,", "")
+            stepData.setLabel(2)
             return line
         elif line.startswith("casualWalk"):
             #found label
             line = line.replace("casualWalk,", "")
-            stepData.setLabel("casualWalk")
+            stepData.setLabel(3)
             return line
         elif line.startswith("fastWalk"):
             #found label
             line = line.replace("fastWalk,", "")
-            stepData.setLabel("fastWalk")
+            stepData.setLabel(4)
+            return line
+        elif line.startswith("labelPlaceholder"):
+            #found label
+            line = line.replace("labelPlaceholder,", "")
+            stepData.setLabel(0)
             return line
         else:
             raise ValueError("Error processing line " + str(self.lineCtr)
@@ -179,48 +181,54 @@ class Parser(object):
         if line.startswith("\"Acceleration\":"):
             line = line.replace("\"Acceleration\":{", "", 3)
             line = line.replace("}", "", 3)     # delete matching closing brackets
-            
+
             # replace keywords for axes
             line = line.replace("\"x-Axes\":", "", 1)
             line = line.replace(",\"x-Axes\":", ";", 2)
             line = line.replace(",\"y-Axes\":", ";", 3)
             line = line.replace(",\"z-Axes\":", ";", 3)
             line = line.replace(",", "")        # delete trailing comma
-            
+
             splittedLine = line.split(";")
-            stepData.setAccelerationData(splittedLine)        
+            for i in range(len(splittedLine)):
+                splittedLine[i] = float(splittedLine[i])
+            stepData.setAccelerationData(splittedLine)
         else:
             raise ValueError("Error processing line " + str(self.lineCtr)
                     + ": The \"Acceleration\" keyword was not found.")
-        
+
         return line
 
-    def processNoiseData(self, line, sum):
-        if line.contains("noise"):
+    def processNoiseData(self, line, avgSum):
+        # check for the "Label" keyword and delete it
+        if line.startswith("\"Label\""):
+            line = line.replace("\"Label\":", "")
+
+        if line.find("noise") > -1:
             line = line.replace("noise,", "")
             line = line.replace("\"Acceleration\":{", "", 3)
             line = line.replace("}", "", 3)     # delete matching closing brackets
-            
+
             # replace keywords for axes
             line = line.replace("\"x-Axes\":", "", 1)
             line = line.replace(",\"x-Axes\":", ";", 2)
             line = line.replace(",\"y-Axes\":", ";", 3)
             line = line.replace(",\"z-Axes\":", ";", 3)
             line = line.replace(",", "")        # delete trailing comma
-            
+
             splittedLine = line.split(";")
-            
+
             for i in range(3):
-                sum[i] += splittedLine[i] + splittedLine[i + 3] + splittedLine[i + 6]
-            
+                avgSum[i] += float(splittedLine[i]) + float(splittedLine[i + 3]) + float(splittedLine[i + 6])
+
         else:
             raise ValueError("Error processing line " + str(self.lineCtr)
                     + ": The \"noise\" keyword was not found.")
-        
+
         return line
 
     # getter
-    def getData(self):
+    def getDataArray(self):
         return self.data
 
     def getAverage(self):
@@ -229,7 +237,7 @@ class Parser(object):
     # setter
     def setDestination(self, destinationPath):
         self.destination = destinationPath
-    
+
     # reverse replace (currently unused)
     def rreplace(self, string, old, new, occurrence):
         # replaces a char/string from the ending
@@ -238,6 +246,6 @@ class Parser(object):
         # rreplace(s, '2', ' ', 3) leads to "1 3 4 5"
         # rreplace(s, '2', ' ', 4) leads to "1 3 4 5"
         # rreplace(s, '2', ' ', 0) leads to "1232425"
-        
+
         li = string.rsplit(old, occurrence)
         return new.join(li)
