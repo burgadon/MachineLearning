@@ -14,7 +14,7 @@ class Parser(object):
         self.destination = ""
         self.data = []
         self.lineCtr = 1
-        self.average = []
+        self.average = [0.0, 0.0, 0.0]
 
     def askForDestination(self):
         self.destination = input("Type in the destination of the file, which should be parsed:\n")
@@ -27,10 +27,10 @@ class Parser(object):
             self.askForDestination()
             self.processData()
             for i in range(len(self.average)):
-                self.average[i] /= self.lineCtr
+                self.average[i] /= 3 * self.lineCtr
 
-            print("The average values are: x = " + str(self.average[0]) + ", y = " + str(self.average[1]) + ", z = " + str(self.average[2]) + ".\n")
-
+            print("The average values are: x = " + str(self.average[0]) + ", y = " + str(self.average[1]) + ", z = " + str(self.average[2]) + ". They were calculated over " + str(self.lineCtr) + " datasets.\n")
+            
         elif (result == "no") | (result == "n"):
             # nothing to do
             return None
@@ -53,10 +53,8 @@ class Parser(object):
 
                 # for noise reduction purposes
                 if line.find("noise") > -1:
-                    avgSum = [0.0, 0.0, 0.0]
-                    self.processNoiseDataLine(line.replace(" ", "").rstrip(), avgSum)
+                    self.processNoiseDataLine(line.replace(" ", "").rstrip())
                     self.lineCtr += 1
-                    self.average += avgSum
 
                 else:
                     # normal data processing
@@ -78,11 +76,11 @@ class Parser(object):
 #                 + ": The processed line should be empty at this point, but \""
 #                 + line + "\" was found.")
 
-    def processNoiseDataLine(self, line, avgSum):
+    def processNoiseDataLine(self, line):
         line = self.processRubbishAtStart(line)
         line = self.processRubbishAtEnd(line)
         line = self.processPairOfLeadingAndTrailingBrackets(line)
-        line = self.processNoiseData(line, avgSum)
+        line = self.processNoiseData(line)
 
 #         if len(line) > 0:
 #             raise ValueError("Error processing line " + str(self.lineCtr)
@@ -199,7 +197,7 @@ class Parser(object):
 
         return line
 
-    def processNoiseData(self, line, avgSum):
+    def processNoiseData(self, line):
         # check for the "Label" keyword and delete it
         if line.startswith("\"Label\""):
             line = line.replace("\"Label\":", "")
@@ -218,8 +216,9 @@ class Parser(object):
 
             splittedLine = line.split(";")
 
-            for i in range(3):
-                avgSum[i] += float(splittedLine[i]) + float(splittedLine[i + 3]) + float(splittedLine[i + 6])
+            self.average[0] += (float(splittedLine[0]) + float(splittedLine[3]) + float(splittedLine[6]))
+            self.average[1] += (float(splittedLine[1]) + float(splittedLine[4]) + float(splittedLine[7]))
+            self.average[2] += (float(splittedLine[2]) + float(splittedLine[5]) + float(splittedLine[8]))
 
         else:
             raise ValueError("Error processing line " + str(self.lineCtr)
