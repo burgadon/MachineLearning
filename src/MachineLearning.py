@@ -165,7 +165,7 @@ if __name__ == "__main__":
     elif (nnTraining == "no") | (nnTraining == "n"):
         # nothing to do
         print("Exiting the program!")
-        sys.exit()
+        sys.exit(0)
     else:
         print("Your given answer (" + nnTraining + ") was not recognized. Exiting the program!")
-        sys.exit()
+        sys.exit(0)
