@@ -58,7 +58,9 @@ class Parser(object):
                 if line.find("noise") > -1:
                     self.processNoiseDataLine(line.replace(" ", "").rstrip())
                     self.lineCtr += 1
-
+                elif len(line) < 20:
+                # line too short, skip it
+                    continue
                 else:
                     # normal data processing
                     stepData = StepData()   # create new step data object
@@ -82,7 +84,9 @@ class Parser(object):
             if line.find("noise") > -1:
                 self.processNoiseDataLine(line.replace(" ", "").rstrip())
                 self.lineCtr += 1
-
+            elif len(line) < 20:
+                # line too short, skip it
+                continue
             else:
                 # normal data processing
                 stepData = StepData()   # create new step data object
@@ -133,10 +137,10 @@ class Parser(object):
 
     def processRubbishAtEnd(self, line):
         # check for undefined end characters
-        if line.endswith("}]"):
+        if line.endswith(",}}]"):
             # found valid end
             return line
-        if len(line) < 2:
+        if len(line) < 3:
             # invalid line format/content
             raise ValueError("Error processing line " + str(self.lineCtr)
                 + ": End of line wasn't found and/or line is too short.")
