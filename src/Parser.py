@@ -41,6 +41,9 @@ class Parser(object):
         return None
 
     def processData(self):
+        # Reset processed data array
+        self.data = []
+        
         with open(self.destination, "r") as file:
             data = file.readlines()
             self.lineCtr = 1    # reset line counter
@@ -63,6 +66,30 @@ class Parser(object):
                     self.processLine(line.replace(" ", "").rstrip(), stepData)
                     self.data.append(stepData)
                     self.lineCtr += 1
+                    
+    # If the data is gathered through listening on a port, use this method
+    def processDataArray(self, rawDataArray):
+        # Reset processed data array
+        self.data = []
+        
+        for line in rawDataArray:
+            # if line is empty: skip it
+            lineWithoutSpacesAndLineFeeds = line.replace(" ", "").rstrip()
+            if len(lineWithoutSpacesAndLineFeeds) == 0:
+                continue
+
+            # for noise reduction purposes
+            if line.find("noise") > -1:
+                self.processNoiseDataLine(line.replace(" ", "").rstrip())
+                self.lineCtr += 1
+
+            else:
+                # normal data processing
+                stepData = StepData()   # create new step data object
+
+                self.processLine(line.replace(" ", "").rstrip(), stepData)
+                self.data.append(stepData)
+                self.lineCtr += 1
 
     def processLine(self, line, stepData):
         line = self.processRubbishAtStart(line)
