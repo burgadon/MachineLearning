@@ -10,10 +10,16 @@ import numpy as np
 from src.Parser import Parser
 import sys
 import time
+import os
+import datetime
+import serial
 
 class NeuralNetwork:
     def __init__(self):
         #parameters
+        self.lastModifiedDay = self.dateToNthDay("19700101")
+        self.listen = True
+        
         self.inputSize = 9
         self.outputSize = 1
         self.hiddenSize = 3
@@ -52,22 +58,107 @@ class NeuralNetwork:
     def train(self, X, y):
         o = self.feedForward(X)
         self.backPropagation(X, y, o)
+        
+# ------------------------------------------------------------------------------
+# Methods for usage
 
     def saveWeights(self):
         np.savetxt("w1.txt", self.W1, fmt="%s")
         np.savetxt("w2.txt", self.W2, fmt="%s")
 
-    def predict(self):
+    def saveResults(self, resultArray):
+        resultPath = "classificationResults.txt"
+        date = time.strftime("%Y%m%d")
+        currentDate = self.dateToNthDay(date)
+        
+        if os.path.exists(resultPath) & ((currentDate - self.lastModifiedDay) == 0):
+            appendMode = 'a'    # Append only at the end
+        else:
+            appendMode = 'w'    # Create a new file
+        
+        file = open(resultPath, appendMode)
+        for i in range(len(resultArray) - 1):
+            file.write(resultArray[i])
+            file.write(",")
+        file.write(resultArray[len(resultArray) - 1])
+        file.close()
+        
+        # Update last time modified parameter
+        self.lastModifiedDay = currentDate
+        
+    def dateToNthDay(self, date):
+        date = datetime.datetime.strptime(date, format=format)
+        new_year_day = datetime.datetime(year=date.year, month=1, day=1)
+        return (date - new_year_day).days + 1
+
+    def predictWithPrint(self, inputForPrediction):
         print("Predicted data based on trained weights:")
         print("Input: \n" + str(inputForPrediction))
         print("Output: \n" + str(self.feedForward(inputForPrediction)))
         
+    def predictWithoutPrint(self, inputForPrediction):
+        return self.feedForward(inputForPrediction)
+        
+    def getUnclassifiedDataToClassify(self, nonInteractive, pathToUnclassifiedData):
+        if (nonInteractive == True):
+            unclassifiedDataPath = pathToUnclassifiedData
+        else:
+            unclassifiedDataPath = input("Enter path to file with data, which is to be classified: ")
+            
+        unclassifedDataParser = Parser()
+        unclassifedDataParser.setDestination(unclassifiedDataPath)
+        unclassifedDataParser.processData()
+        
+        # Retrieve data back
+        parsedUnclassifiedData = unclassifedDataParser.getDataArray()
+        
+        # Set necessary input arrays
+        (inputValues, inputLabels) = self.setInputForClassificationScaled(parsedUnclassifiedData)
+        
+        return (inputValues, inputLabels)
+
+    def setInputForClassificationScaled(self, parsedDataArray):
+        # Set X (input step data values) and y (input labels corresponding to the step data values)
+        inputValues = []
+        inputLabels = []
+        
+        for i in range(len(parsedDataArray)):
+            accArray = np.asarray(parsedDataArray[i].getAccelerationData(), dtype=float)
+            labelArray = np.asarray([parsedDataArray[i].getLabel()], dtype=float)
+            
+            inputValues.append(accArray)
+            inputLabels.append(labelArray)
+            
+        inputValues = np.asarray(inputValues)
+        inputLabels = np.asarray(inputLabels)
+        
+        # scale units
+        inputValues /= np.amax(X, axis=0) # maximum of X array
+        inputLabels /= 4                  # max "score" is 4 (amount of different step labels)
+        
+        return (inputValues, inputLabels)
+        
+    def listenOnPort(self):
+        rawInputData = []
+        port = "COM9"
+        baudrate = 9600
+        timeout = 0.25
+        ser = serial.Serial(port, baudrate, timeout)
+        if ser.isOpen():
+            # print(ser.name + " was successfully opened.")
+            while self.listen == True:
+                rawInputData.append(ser.readline())
+        else:
+            raise ValueError("Opening the serial port connection on port \"" + port + "\" failed")
+        
+        ser.close()
+        return rawInputData
+        
+        
 # ------------------------------------------------------------------------------
-# use NN
+# Start of Example
 
-if __name__ == "__main__":
-
-# start of example   
+#if __name__ == "__main__": 
 #     # X = (hours studying, hours sleeping), y = score on test, xPredicted = 4 hours studying & 8 hours sleeping (input data for prediction)
 #     X = np.array(([2, 9], [1, 5], [3, 6]), dtype=float)
 #     y = np.array(([92], [86], [89]), dtype=float)
@@ -98,16 +189,22 @@ if __name__ == "__main__":
 #     print("DONE!\n\n", sep=' ', end="", flush=True)
 #     nn.predict()
     
-# end of example
+# End of example
 # ------------------------------------------------------------------------------
-    
-    # initialize and run parser
+
+if __name__ == "__main__":
+    # Initialize and run parser
     parser = Parser()
-    parser.askForAverageCalculation()
+    parser.askForAverageCalculation()           # Asks whether new average values should be calculated
     
-    # ask whether an NN should be trained
+    # Ask whether an NN should be trained
     nnTraining = input("Do you want to train a neural network for step recognition? (y(es) / n(o)): ")
     if (nnTraining == "yes") | (nnTraining == "y"):
+        NN = NeuralNetwork()
+        
+        NN.listen = True
+        #inArray = NN.listenOnPort()
+        #parser.processDataArray(inArray)
         parser.askForDestination()
         parser.processData()
         
@@ -118,21 +215,7 @@ if __name__ == "__main__":
         # Set X (input step data values) and y (input labels corresponding to the step data values)
         X = []
         y = []
-        for i in range(len(parsedData) - 1):
-            accArray = np.asarray(parsedData[i].getAccelerationData(), dtype=float)
-            labelArray = np.asarray([parsedData[i].getLabel()], dtype=float)
-            
-            X.append(accArray)
-            y.append(labelArray)
-            
-        X = np.asarray(X)
-        y = np.asarray(y)
-            
-        # scale units
-        X /= np.amax(X, axis=0) # maximum of X array
-        y /= 4                  # max "score" is 4
-        
-        NN = NeuralNetwork()
+        (X, y) = NN.setInputForClassificationScaled(parsedData)
         
         # training the NN 100,000 times
         print("Training: Started ...", end=" ")
@@ -156,11 +239,18 @@ if __name__ == "__main__":
         print("DONE!\n\n", sep=' ', end="", flush=True)
         
         # Get data which should be classified
-        t = parsedData[len(parsedData) - 1].getAccelerationData()   # last data entry in parsedData
-        inputForPrediction = np.array((t), dtype=float)
-        inputForPrediction /= np.amax(inputForPrediction, axis=0) # maximum of inputForPrediction (our input data for the prediction)
+        (XTemp, yTemp) = NN.getUnclassifiedDataToClassify(False, "");   # Interactive version
+        inForPrediction = np.array((XTemp), dtype=float)
+        inForPrediction /= np.amax(inForPrediction, axis=0)             # maximum of inForPrediction (our input data for the prediction)
         
-        NN.predict()
+        # Predict
+        result = []
+        for j in range(len(inForPrediction)):
+            result.append(NN.predictWithoutPrint(inForPrediction))
+        #NN.predictWithPrint(inForPrediction)
+        
+        # Save results in a file
+        
 
     elif (nnTraining == "no") | (nnTraining == "n"):
         # nothing to do
