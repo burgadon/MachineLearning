@@ -17,7 +17,7 @@ import serial
 class NeuralNetwork:
     def __init__(self):
         #parameters
-        self.lastModifiedDay = self.dateToNthDay("19700101")
+        self.lastModifiedDay = 0
         self.listen = True
         
         self.inputSize = 9
@@ -76,18 +76,31 @@ class NeuralNetwork:
         else:
             appendMode = 'w'    # Create a new file
         
+        #print("RESULTARRAY: " + str(resultArray))
+        
         file = open(resultPath, appendMode)
-        for i in range(len(resultArray) - 1):
-            file.write(resultArray[i])
+        #for j in range(len(resultArray)):
+        for i in range(len(resultArray)):
+            print(str(resultArray[i]))
+            
+            if int(np.round(resultArray[i] * 10)) <= 3:
+                file.write(str("noMove"))
+            elif int(np.round(resultArray[i] * 10)) <= 10:
+                file.write(str("slowWalk"))
+            #elif int(np.round(resultArray[i] * 10)) <= 10:
+            #    file.write(str("casualWork"))
+            #elif int(np.round(resultArray[i] * 10)) == 3:
+            #    file.write(str("fastWalk"))
+            else: 
+                file.write(str("labelPlaceholder"))
             file.write(",")
-        file.write(resultArray[len(resultArray) - 1])
         file.close()
         
         # Update last time modified parameter
         self.lastModifiedDay = currentDate
         
     def dateToNthDay(self, date):
-        date = datetime.datetime.strptime(date, format=format)
+        date = datetime.datetime.strptime(date, "%Y%m%d")
         new_year_day = datetime.datetime(year=date.year, month=1, day=1)
         return (date - new_year_day).days + 1
 
@@ -99,18 +112,17 @@ class NeuralNetwork:
     def predictWithoutPrint(self, inputForPrediction):
         return self.feedForward(inputForPrediction)
         
-    def getUnclassifiedDataToClassify(self, nonInteractive, pathToUnclassifiedData):
+    def getUnclassifiedDataToClassify(self, nonInteractive, unclassifiedDataArray):
         if (nonInteractive == True):
-            unclassifiedDataPath = pathToUnclassifiedData
+            parsedUnclassifiedData = unclassifiedDataArray
         else:
             unclassifiedDataPath = input("Enter path to file with data, which is to be classified: ")
-            
-        unclassifedDataParser = Parser()
-        unclassifedDataParser.setDestination(unclassifiedDataPath)
-        unclassifedDataParser.processData()
-        
-        # Retrieve data back
-        parsedUnclassifiedData = unclassifedDataParser.getDataArray()
+            unclassifedDataParser = Parser()
+            unclassifedDataParser.setDestination(unclassifiedDataPath)
+            unclassifedDataParser.processData()
+
+            # Retrieve data back
+            parsedUnclassifiedData = unclassifedDataParser.getDataArray()
         
         # Set necessary input arrays
         (inputValues, inputLabels) = self.setInputForClassificationScaled(parsedUnclassifiedData)
@@ -133,8 +145,8 @@ class NeuralNetwork:
         inputLabels = np.asarray(inputLabels)
         
         # scale units
-        inputValues /= np.amax(X, axis=0) # maximum of X array
-        inputLabels /= 4                  # max "score" is 4 (amount of different step labels)
+        inputValues /= np.amax(inputValues) # maximum of X array
+        inputLabels /= 3                  # max "score" is 4 (amount of different step labels)
         
         return (inputValues, inputLabels)
         
@@ -220,8 +232,8 @@ if __name__ == "__main__":
         # training the NN 100,000 times
         print("Training: Started ...", end=" ")
         t = time.process_time()
-        for i in range(100000):        
-            if (i % 1000) == 0:
+        for i in range(500000):        
+            if (i % 10000) == 0:
                 print("# " + str(i) + "\n")
                 print("Input (scaled): \n" + str(X))
                 print("Actual Output: \n" + str(y))
@@ -246,10 +258,11 @@ if __name__ == "__main__":
         # Predict
         result = []
         for j in range(len(inForPrediction)):
-            result.append(NN.predictWithoutPrint(inForPrediction))
+            result.append(NN.predictWithoutPrint(inForPrediction[j]))
         #NN.predictWithPrint(inForPrediction)
         
         # Save results in a file
+        NN.saveResults(result)
         
 
     elif (nnTraining == "no") | (nnTraining == "n"):

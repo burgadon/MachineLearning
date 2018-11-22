@@ -190,12 +190,12 @@ class Parser(object):
         elif line.startswith("casualWalk"):
             #found label
             line = line.replace("casualWalk,", "")
-            stepData.setLabel(3)
+            stepData.setLabel(2)
             return line
         elif line.startswith("fastWalk"):
             #found label
             line = line.replace("fastWalk,", "")
-            stepData.setLabel(4)
+            stepData.setLabel(2)
             return line
         elif line.startswith("labelPlaceholder"):
             #found label
