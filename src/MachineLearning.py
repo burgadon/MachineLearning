@@ -83,9 +83,9 @@ class NeuralNetwork:
         for i in range(len(resultArray)):
             print(str(resultArray[i]))
             
-            if int(np.round(resultArray[i] * 10)) <= 3:
+            if int(np.round(resultArray[i] * 10)) != 5:
                 file.write(str("noMove"))
-            elif int(np.round(resultArray[i] * 10)) <= 10:
+            elif int(np.round(resultArray[i] * 10)) == 5:
                 file.write(str("slowWalk"))
             #elif int(np.round(resultArray[i] * 10)) <= 10:
             #    file.write(str("casualWork"))
@@ -229,18 +229,25 @@ if __name__ == "__main__":
         y = []
         (X, y) = NN.setInputForClassificationScaled(parsedData)
         
-        # training the NN 100,000 times
+        # New training method
         print("Training: Started ...", end=" ")
         t = time.process_time()
-        for i in range(500000):        
-            if (i % 10000) == 0:
-                print("# " + str(i) + "\n")
+        loss = 1.0
+        trainingCounter = 0
+        while (loss > 0.004):
+            NN.train(X, y)
+            loss = np.mean(np.square(y - NN.feedForward(X))) # mean sum squared loss
+            
+            if (trainingCounter % 10000) == 0:
+                print("# " + str(trainingCounter) + "\n")
                 print("Input (scaled): \n" + str(X))
                 print("Actual Output: \n" + str(y))
                 print("Predicted Output: \n" + str(NN.feedForward(X)))
-                print("Loss: \n" + str(np.mean(np.square(y - NN.feedForward(X))))) # mean sum squared loss
+                print("Loss: \n" + str(loss))
                 print("\n")
-            NN.train(X, y)
+            
+            trainingCounter += 1
+            
         elapsedTime = float(int((time.process_time() - t) * 100)) / 100     # only 2 decimal positions
         print("DONE!\n", sep=' ', end="", flush=True)
         print("Time for training: " + str(elapsedTime) + " seconds.")
@@ -248,7 +255,8 @@ if __name__ == "__main__":
         # Save the weight values in a text-file
         print("Save weights:", end=" ")
         NN.saveWeights()
-        print("DONE!\n\n", sep=' ', end="", flush=True)
+        print("DONE!\n", sep=' ', end="", flush=True)
+        print("Final loss: " + str(loss) + "\n")
         
         # Get data which should be classified
         (XTemp, yTemp) = NN.getUnclassifiedDataToClassify(False, "");   # Interactive version
