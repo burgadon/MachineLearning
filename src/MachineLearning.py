@@ -1,7 +1,7 @@
 # MachineLearning.py
 # Author: Armin Müller
 # Created on 19.10.2018
-# Last Modified on: 19.11.2018
+# Last Modified on: 10.12.2018
 #
 # This project aims to use a neural network to decide which type of step 
 # the given step data represents
@@ -25,8 +25,20 @@ class NeuralNetwork:
         self.hiddenSize = 3
         
         #weights
-        self.W1 = np.random.randn(self.inputSize, self.hiddenSize)  # (9x3) weight matrix from input to hidden layer
-        self.W2 = np.random.randn(self.hiddenSize, self.outputSize) # (3x1) weight matrix from hidden to output layer
+        #self.W1 = np.random.randn(self.inputSize, self.hiddenSize)  # (9x3) weight matrix from input to hidden layer
+        #self.W2 = np.random.randn(self.hiddenSize, self.outputSize) # (3x1) weight matrix from hidden to output layer
+        self.W1 = np.matrix([[10.007343465980664, 5.113687635194334, 10.743692465400681],
+        [-5.482072882025064, 1.710683866674025, -11.273259210070421],
+        [-6.210177219251583, -4.299305906476425, -7.137855498482551],
+        [0.053834364631157004, -0.11361658909616405, 0.9349942111048926],
+        [-1.6344774151722814, -0.5800769180741111, 0.6968202422204991],
+        [0.21503462895170905, -0.20637675331092015, -2.648316104798255],
+        [6.485511882359739, 6.001813741534642, -2.070565449704359],
+        [-12.845249376060709, -5.249647815044626, -26.120509434158624],
+        [-3.201236245906119, -5.249431273873157, 0.2093727359358657]])
+        self.W2 = np.matrix([[-11.288591202763781], [4.982001257876912], [5.114694548460975]])       
+        
+        
 
     # Activation function
     def sigmoid(self, t):
@@ -81,6 +93,7 @@ class NeuralNetwork:
         file = open(resultPath, appendMode)
         #for j in range(len(resultArray)):
         for i in range(len(resultArray)):
+            # For DEBUG
             print(str(resultArray[i]))
             
             if int(np.round(resultArray[i] * 10)) != 5:
@@ -93,7 +106,9 @@ class NeuralNetwork:
             #    file.write(str("fastWalk"))
             else: 
                 file.write(str("labelPlaceholder"))
-            file.write(",")
+            
+            if (i != len(resultArray) - 1):
+                file.write(",")
         file.close()
         
         # Update last time modified parameter
@@ -146,7 +161,7 @@ class NeuralNetwork:
         
         # scale units
         inputValues /= np.amax(inputValues) # maximum of X array
-        inputLabels /= 3                  # max "score" is 4 (amount of different step labels)
+        inputLabels /= 3                    # max "score" is 3 (amount of different step labels)
         
         return (inputValues, inputLabels)
         
@@ -207,76 +222,93 @@ class NeuralNetwork:
 if __name__ == "__main__":
     # Initialize and run parser
     parser = Parser()
-    parser.askForAverageCalculation()           # Asks whether new average values should be calculated
+    #parser.askForAverageCalculation()           # Asks whether new average values should be calculated
     
     # Ask whether an NN should be trained
-    nnTraining = input("Do you want to train a neural network for step recognition? (y(es) / n(o)): ")
-    if (nnTraining == "yes") | (nnTraining == "y"):
-        NN = NeuralNetwork()
-        
-        NN.listen = True
-        #inArray = NN.listenOnPort()
-        #parser.processDataArray(inArray)
-        parser.askForDestination()
-        parser.processData()
-        
-        # Retrieve parsed data as an array
-        parsedData = []
-        parsedData = parser.getDataArray()
-        
-        # Set X (input step data values) and y (input labels corresponding to the step data values)
-        X = []
-        y = []
-        (X, y) = NN.setInputForClassificationScaled(parsedData)
-        
-        # New training method
-        print("Training: Started ...", end=" ")
-        t = time.process_time()
-        loss = 1.0
-        trainingCounter = 0
-        while (loss > 0.004):
-            NN.train(X, y)
-            loss = np.mean(np.square(y - NN.feedForward(X))) # mean sum squared loss
-            
-            if (trainingCounter % 10000) == 0:
-                print("# " + str(trainingCounter) + "\n")
-                print("Input (scaled): \n" + str(X))
-                print("Actual Output: \n" + str(y))
-                print("Predicted Output: \n" + str(NN.feedForward(X)))
-                print("Loss: \n" + str(loss))
-                print("\n")
-            
-            trainingCounter += 1
-            
-        elapsedTime = float(int((time.process_time() - t) * 100)) / 100     # only 2 decimal positions
-        print("DONE!\n", sep=' ', end="", flush=True)
-        print("Time for training: " + str(elapsedTime) + " seconds.")
-        
-        # Save the weight values in a text-file
-        print("Save weights:", end=" ")
-        NN.saveWeights()
-        print("DONE!\n", sep=' ', end="", flush=True)
-        print("Final loss: " + str(loss) + "\n")
-        
-        # Get data which should be classified
-        (XTemp, yTemp) = NN.getUnclassifiedDataToClassify(False, "");   # Interactive version
-        inForPrediction = np.array((XTemp), dtype=float)
-        inForPrediction /= np.amax(inForPrediction, axis=0)             # maximum of inForPrediction (our input data for the prediction)
-        
-        # Predict
-        result = []
-        for j in range(len(inForPrediction)):
-            result.append(NN.predictWithoutPrint(inForPrediction[j]))
-        #NN.predictWithPrint(inForPrediction)
-        
-        # Save results in a file
-        NN.saveResults(result)
-        
+    #nnTraining = input("Do you want to train a neural network for step recognition? (y(es) / n(o)): ")
+    #if (nnTraining == "yes") | (nnTraining == "y"):
+#         NN = NeuralNetwork()
+#         
+#         NN.listen = True
+#         #inArray = NN.listenOnPort()
+#         #parser.processDataArray(inArray)
+#         parser.askForDestination()
+#         parser.processData()
+#         
+#         # Retrieve parsed data as an array
+#         parsedData = []
+#         parsedData = parser.getDataArray()
+#         
+#         # Set X (input step data values) and y (input labels corresponding to the step data values)
+#         X = []
+#         y = []
+#         (X, y) = NN.setInputForClassificationScaled(parsedData)
+#         
+#         # New training method
+#         print("Training: Started ...", end=" ")
+#         t = time.process_time()
+#         loss = 1.0
+#         trainingCounter = 0
+#         while (loss > 0.004):
+#             NN.train(X, y)
+#             loss = np.mean(np.square(y - NN.feedForward(X))) # mean sum squared loss
+#             
+#             if (trainingCounter % 10000) == 0:
+#                 print("# " + str(trainingCounter) + "\n")
+#                 print("Input (scaled): \n" + str(X))
+#                 print("Actual Output: \n" + str(y))
+#                 print("Predicted Output: \n" + str(NN.feedForward(X)))
+#                 print("Loss: \n" + str(loss))
+#                 print("\n")
+#             
+#             trainingCounter += 1
+#             
+#         elapsedTime = float(int((time.process_time() - t) * 100)) / 100     # only 2 decimal positions
+#         print("DONE!\n", sep=' ', end="", flush=True)
+#         print("Time for training: " + str(elapsedTime) + " seconds.")
+#         
+#         # Save the weight values in a text-file
+#         print("Save weights:", end=" ")
+#         NN.saveWeights()
+#         print("DONE!\n", sep=' ', end="", flush=True)
+#         print("Final loss: " + str(loss) + "\n")
+#         
+#         # Get data which should be classified
+#         (XTemp, yTemp) = NN.getUnclassifiedDataToClassify(False, "");   # Interactive version
+#         inForPrediction = np.array((XTemp), dtype=float)
+#         inForPrediction /= np.amax(inForPrediction, axis=0)             # maximum of inForPrediction (our input data for the prediction)
+#         
+#         # Predict
+#         result = []
+#         for j in range(len(inForPrediction)):
+#             result.append(NN.predictWithoutPrint(inForPrediction[j]))
+#         #NN.predictWithPrint(inForPrediction)
+#         
+#         # Save results in a file
+#         NN.saveResults(result)
+#         
+# 
+#     elif (nnTraining == "no") | (nnTraining == "n"):
+#         # nothing to do
+#         print("Exiting the program!")
+#         sys.exit(0)
+#     else:
+#         print("Your given answer (" + nnTraining + ") was not recognized. Exiting the program!")
+#         sys.exit(0)
 
-    elif (nnTraining == "no") | (nnTraining == "n"):
-        # nothing to do
-        print("Exiting the program!")
-        sys.exit(0)
-    else:
-        print("Your given answer (" + nnTraining + ") was not recognized. Exiting the program!")
-        sys.exit(0)
+#-------------------------------------------------------------------------------
+    NN = NeuralNetwork()
+    # Get data which should be classified
+    (XTemp, yTemp) = NN.getUnclassifiedDataToClassify(False, "");   # Interactive version
+    inForPrediction = np.array((XTemp), dtype=float)
+    inForPrediction /= np.amax(inForPrediction, axis=0)             # maximum of inForPrediction (our input data for the prediction)
+     
+    # Predict
+    result = []
+    for j in range(len(inForPrediction)):
+        result.append(NN.predictWithoutPrint(inForPrediction[j]))
+    #NN.predictWithPrint(inForPrediction)
+     
+    # Save results in a file
+    NN.saveResults(result)
+    
