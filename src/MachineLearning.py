@@ -7,6 +7,8 @@
 # the given step data represents
 
 import numpy as np
+import repackage
+repackage.up()
 from src.Parser import Parser
 import time
 import os
