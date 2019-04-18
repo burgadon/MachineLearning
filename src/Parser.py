@@ -1,10 +1,10 @@
 # Parser.py
 # Author: Armin Müller
 # Created on 01.11.2018
-# Last Modified on: 19.11.2018
+# Last Modified on: 17.04.2019
 #
 # This file provides a parser to extract the data out of input files for
-# the walking-NN-project
+# the step-recognition-NN-project
 
 from src.StepData import StepData
 
@@ -22,7 +22,7 @@ class Parser(object):
 
     def askForAverageCalculation(self):
         result = input("Do you want to calculate the average for noise reduction purposes? (y(es) / n(o)): ")
-        if (result == "yes") | (result == "y"):
+        if (result == "yes") or (result == "y"):
             # calculate the average for noise reduction
             self.askForDestination()
             self.processData()
@@ -31,7 +31,7 @@ class Parser(object):
 
             print("The average values are: x = " + str(self.average[0]) + ", y = " + str(self.average[1]) + ", z = " + str(self.average[2]) + ". They were calculated over " + str(self.lineCtr) + " datasets.\n")
             
-        elif (result == "no") | (result == "n"):
+        elif (result == "no") or (result == "n"):
             # nothing to do
             return None
         else:
@@ -54,18 +54,19 @@ class Parser(object):
                 if len(lineWithoutSpacesAndLineFeeds) == 0:
                     continue
 
-                # for noise reduction purposes
                 if line.find("noise") > -1:
+                    # for noise reduction purposes
                     self.processNoiseDataLine(line.replace(" ", "").rstrip())
                     self.lineCtr += 1
-                elif len(line) < 20:
-                # line too short, skip it
+                elif len(line) < 230 or len(line) > 250:
+                    # line too short/long, skip it
+                    print("Couldn't parse line " + str(line) + " of the input file. It was skipped.")
                     continue
                 else:
                     # normal data processing
                     stepData = StepData()   # create new step data object
 
-                    self.processLine(line.replace(" ", "").rstrip(), stepData)
+                    self.processLine(line.replace(" ", "").rstrip(), stepData)  # Delete whitespaces
                     self.data.append(stepData)
                     self.lineCtr += 1
                     
@@ -84,8 +85,9 @@ class Parser(object):
             if line.find("noise") > -1:
                 self.processNoiseDataLine(line.replace(" ", "").rstrip())
                 self.lineCtr += 1
-            elif len(line) < 20:
-                # line too short, skip it
+            elif len(line) < 230 or len(line) > 250:
+                # line too short/long, skip it
+                print("Couldn't parse line " + str(line) + " of the input file. It was skipped.")
                 continue
             else:
                 # normal data processing
@@ -102,21 +104,11 @@ class Parser(object):
         line = self.processLabel(line, stepData)
         line = self.processAccelerationData(line, stepData)
 
-#         if not line.isEmpty():
-#             raise ValueError("Error processing line " + str(self.lineCtr)
-#                 + ": The processed line should be empty at this point, but \""
-#                 + line + "\" was found.")
-
     def processNoiseDataLine(self, line):
         line = self.processRubbishAtStart(line)
         line = self.processRubbishAtEnd(line)
         line = self.processPairOfLeadingAndTrailingBrackets(line)
         line = self.processNoiseData(line)
-
-#         if len(line) > 0:
-#             raise ValueError("Error processing line " + str(self.lineCtr)
-#                 + ": The processed line should be empty at this point, but \""
-#                 + line + "\" was found.")
 
     def processRubbishAtStart(self, line):
         # check for undefined start characters
@@ -187,24 +179,13 @@ class Parser(object):
             line = line.replace("slowWalk,", "")
             stepData.setLabel(2)
             return line
-        elif line.startswith("casualWalk"):
-            #found label
-            line = line.replace("casualWalk,", "")
-            stepData.setLabel(2)
-            return line
-        elif line.startswith("fastWalk"):
-            #found label
-            line = line.replace("fastWalk,", "")
-            stepData.setLabel(2)
-            return line
         elif line.startswith("labelPlaceholder"):
             #found label
             line = line.replace("labelPlaceholder,", "")
             stepData.setLabel(0)
             return line
         else:
-            raise ValueError("Error processing line " + str(self.lineCtr)
-                    + ": The label is not supported or missing.")
+            raise ValueError("Error processing line " + str(self.lineCtr) + ": The label is not supported or missing.")
 
     def processAccelerationData(self, line, stepData):
         if line.startswith("\"Acceleration\":"):
@@ -252,8 +233,7 @@ class Parser(object):
             self.average[2] += (float(splittedLine[2]) + float(splittedLine[5]) + float(splittedLine[8]))
 
         else:
-            raise ValueError("Error processing line " + str(self.lineCtr)
-                    + ": The \"noise\" keyword was not found.")
+            raise ValueError("Error processing line " + str(self.lineCtr) + ": The \"noise\" keyword was not found.")
 
         return line
 
